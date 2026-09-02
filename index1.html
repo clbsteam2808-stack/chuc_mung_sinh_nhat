@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chúc Mừng Sinh Nhật - Mệnh Thủy 3D Celebration</title>
+    
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- QRCode.js Library for QR Code generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;600;700;800;900&family=Great+Vibes&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #020617; 
+            font-family: 'Montserrat', sans-serif; 
+            user-select: none;
+            color: #fff;
+        }
+
+        /* Tự động ẩn toàn bộ công cụ chỉnh sửa & chia sẻ khi người nhận mở thiệp qua mã QR */
+        body.read-only-mode .toggle-panel-btn,
+        body.read-only-mode .btn-share-highlight,
+        body.read-only-mode #settings-panel,
+        body.read-only-mode #share-modal {
+            display: none !important;
+        }
+        
+        #canvas-container { 
+            width: 100vw; 
+            height: 100vh; 
+            display: block; 
+        }
+        
+        /* UI Layer - Glassmorphism & Vibrant Glows */
+        #ui-layer {
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            pointer-events: none; 
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            transition: opacity 0.4s ease;
+        }
+
+        #ui-layer.hidden-ui {
+            opacity: 0;
+            pointer-events: none !important;
+        }
+
+        #btn-pure-view {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 100;
+            pointer-events: auto;
+        }
+        
+        /* Header Title Status Box */
+        .header-box {
+            text-align: center;
+            margin-top: 5px;
+            transition: all 0.5s ease;
+            max-width: 90%;
+        }
+
+        .badge {
+            display: inline-block; 
+            background: linear-gradient(135deg, rgba(8, 26, 60, 0.9), rgba(40, 10, 60, 0.9));
+            border: 2px solid #00F3FF; 
+            color: #E2E8F0;
+            padding: 10px 28px; 
+            border-radius: 50px;
+            font-size: 18px; 
+            font-weight: 800; 
+            letter-spacing: 2px;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.4), 0 0 15px rgba(255, 215, 0, 0.3);
+            text-shadow: 0 0 10px #00F3FF, 0 0 20px #FFD700;
+            backdrop-filter: blur(12px);
+        }
+
+        .sub-wish {
+            margin-top: 10px;
+            font-family: 'Dancing Script', cursive;
+            font-size: 26px;
+            color: #FFD700;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 0 25px rgba(0, 243, 255, 0.6);
+            min-height: 36px;
+            padding: 0 10px;
+        }
+
+        /* ----------------------------------------------------
+           Start Screen Overlay - Custom Wishing Card Opener
+           ---------------------------------------------------- */
+        #start-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #0B1938 0%, #030A1C 60%, #01040D 100%);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .wish-card {
+            background: rgba(10, 25, 50, 0.88);
+            border: 2px solid rgba(0, 243, 255, 0.6);
+            border-radius: 28px;
+            padding: 38px 32px;
+            max-width: 650px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.35), 0 0 30px rgba(255, 64, 129, 0.25);
+            animation: floatingCard 4s ease-in-out infinite;
+        }
+
+        @keyframes floatingCard {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .wish-card .quote-icon {
+            font-size: 42px;
+            margin-bottom: 8px;
+            display: block;
+            background: linear-gradient(45deg, #FFD700, #00F3FF, #FF4081);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .wish-card h1 {
+            font-family: 'Great Vibes', cursive;
+            font-size: 52px;
+            background: linear-gradient(135deg, #00F3FF, #FFD700, #FF60C5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 18px;
+            text-shadow: 0 0 30px rgba(0, 243, 255, 0.5);
+            line-height: 1.2;
+        }
+
+        .wish-card p.main-message {
+            font-family: 'Dancing Script', cursive;
+            font-size: 26px;
+            line-height: 1.6;
+            color: #E2E8F0;
+            text-shadow: 0 0 12px rgba(0, 243, 255, 0.6);
+            margin-bottom: 28px;
+            white-space: pre-line;
+        }
+
+        .btn-start {
+            pointer-events: auto; 
+            cursor: pointer;
+            background: linear-gradient(135deg, #00F3FF, #FF4081, #FFD700); 
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite, pulseBtn 2s infinite;
+            color: #020916; 
+            border: none;
+            padding: 16px 48px; 
+            border-radius: 50px; 
+            font-weight: 900; 
+            font-size: 18px;
+            letter-spacing: 2px;
+            box-shadow: 0 0 35px rgba(0, 243, 255, 0.7), 0 0 20px rgba(255, 215, 0, 0.5);
+            transition: transform 0.2s;
+        }
+        .btn-start:hover { transform: scale(1.08); }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes pulseBtn { 
+            0% { box-shadow: 0 0 20px rgba(0, 243, 255, 0.6), 0 0 10px rgba(255, 215, 0, 0.4); } 
+            50% { box-shadow: 0 0 45px rgba(255, 64, 129, 0.8), 0 0 25px rgba(0, 243, 255, 0.8); } 
+            100% { box-shadow: 0 0 20px rgba(0, 243, 255, 0.6), 0 0 10px rgba(255, 215, 0, 0.4); } 
+        }
+
+        /* Bottom Controls Bar */
+        .bottom-bar {
+            margin-bottom: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            background: rgba(8, 20, 48, 0.85);
+            border: 1px solid rgba(0, 243, 255, 0.5);
+            color: #00F3FF;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+        .control-btn:hover {
+            background: linear-gradient(135deg, #00F3FF, #FF4081);
+            color: #020916;
+            box-shadow: 0 0 25px #00F3FF;
+            border-color: #FFF;
+        }
+
+        .btn-share-highlight {
+            background: linear-gradient(135deg, #FFD700, #FF4081);
+            color: #020916;
+            border: none;
+            font-weight: 800;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+
+        /* Settings Panel */
+        #settings-panel {
+            position: absolute;
+            top: 16px; right: 16px;
+            background: rgba(6, 16, 38, 0.95);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            border-radius: 20px;
+            padding: 20px;
+            width: 330px;
+            pointer-events: auto;
+            backdrop-filter: blur(16px);
+            z-index: 100;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 243, 255, 0.2);
+            transform: translateX(370px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #settings-panel.open {
+            transform: translateX(0);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+            padding-bottom: 8px;
+        }
+        .panel-header h3 {
+            font-size: 14px;
+            color: #00F3FF;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+        .close-btn {
+            background: none; border: none; color: #80D8FF; cursor: pointer; font-size: 20px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #FFD700;
+            margin: 14px 0 6px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .custom-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .custom-input-group label {
+            font-size: 11px;
+            color: #B0BEC5;
+            font-weight: 600;
+        }
+        .custom-input-group input[type="text"], 
+        .custom-input-group textarea {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 10px;
+            padding: 8px 10px;
+            color: #FFF;
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+        }
+        .custom-input-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .music-upload-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(0, 243, 255, 0.4);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .music-upload-box label {
+            cursor: pointer;
+            font-size: 12px;
+            color: #E2E8F0;
+            display: block;
+            font-weight: 600;
+        }
+        .music-upload-box input[type="file"] { display: none; }
+        .music-name {
+            font-size: 11px;
+            color: #00F3FF;
+            margin-top: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .upload-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .upload-slot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.04);
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px dashed rgba(0, 243, 255, 0.3);
+        }
+        .upload-slot label {
+            font-size: 12px;
+            color: #B0BEC5;
+            cursor: pointer;
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .upload-slot input[type="file"] { display: none; }
+        .slot-thumb {
+            width: 38px; height: 38px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #00F3FF;
+            margin-left: 8px;
+            background: #000;
+        }
+
+        .btn-action-full {
+            width: 100%;
+            padding: 12px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            background: linear-gradient(135deg, #00F3FF, #FFD700);
+            color: #020916;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .btn-action-full:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.7);
+        }
+
+        .toggle-panel-btn {
+            position: absolute;
+            top: 16px; right: 16px;
+            pointer-events: auto;
+            z-index: 90;
+        }
+
+        /* Modal Popup for QR Code & Sharing */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.88);
+            backdrop-filter: blur(12px);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: linear-gradient(135deg, rgba(8, 26, 60, 0.95), rgba(20, 8, 40, 0.95));
+            border: 2px solid #00F3FF;
+            border-radius: 24px;
+            padding: 28px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.4);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-card h2 {
+            font-size: 20px;
+            color: #00F3FF;
+            margin-bottom: 12px;
+            font-weight: 800;
+        }
+
+        .qr-box {
+            background: #fff;
+            padding: 16px;
+            border-radius: 16px;
+            display: inline-block;
+            margin: 16px 0;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+        }
+
+        .share-input-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .share-input-group input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            border-radius: 12px;
+            padding: 8px 12px;
+            color: #FFF;
+            font-size: 12px;
+            outline: none;
+        }
+
+        /* Toast Notifications */
+        #toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(0, 243, 255, 0.95);
+            color: #020916;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 13px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.6);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 3000;
+        }
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            position: absolute;
+            bottom: 0; left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00F3FF, #FF4081, #FFD700, #00FF88);
+            width: 0%;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px #00F3FF;
+        }
+
+        @media (max-width: 768px) {
+            .wish-card h1 { font-size: 38px; }
+            .wish-card p.main-message { font-size: 20px; }
+            .badge { font-size: 14px; padding: 8px 18px; }
+            .sub-wish { font-size: 20px; }
+            #settings-panel { width: 290px; top: 10px; right: 10px; }
+            .toggle-panel-btn { top: 10px; right: 10px; }
+            #btn-pure-view { top: 10px; left: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Toggle Pure Visual Mode Button -->
+    <button class="control-btn" id="btn-pure-view" onclick="togglePureView()">
+        👁️ Ẩn UI (Xem 3D)
+    </button>
+
+    <!-- Start Screen Overlay - Custom Wishing Experience -->
+    <div id="start-overlay">
+        <div class="wish-card">
+            <span class="quote-icon">✨ 🎂 ✨</span>
+            <h1 id="wish-title-display">Chúc Mừng Sinh Nhật</h1>
+            <p class="main-message" id="main-wish-text">
+                "Chúc bạn một tuổi mới luôn đong đầy hạnh phúc, rạng rỡ niềm vui, tâm hồn bao la như biển cả và thành công rực rỡ như những chòm sao sáng nhất!"
+            </p>
+            <button class="btn-start" id="btn-start-show" onclick="startBirthdayShow()">MỞ THIỆP SINH NHẬT ✨</button>
+        </div>
+    </div>
+
+    <!-- UI Overlay Controls -->
+    <div id="ui-layer">
+        <div class="header-box">
+            <div id="status" class="badge">💎 CHÚC MỪNG SINH NHẬT 💎</div>
+            <div id="sub-wish" class="sub-wish">Chúc bạn tuổi mới luôn êm đềm, may mắn và vươn xa như dòng biển lớn!</div>
+        </div>
+
+        <!-- Toggle Unified Settings Button -->
+        <button class="control-btn toggle-panel-btn" onclick="toggleSettingsPanel()">
+            ⚙️ Tùy Chỉnh & Chia Sẻ
+        </button>
+
+        <!-- Bottom Controls Bar -->
+        <div class="bottom-bar">
+            <button class="control-btn" id="btn-auto" onclick="toggleAutoPlay()">
+                ⏸️ Tạm Dừng
+            </button>
+            <button class="control-btn" onclick="nextState()">
+                ⏭️ Cảnh Tiếp
+            </button>
+            <button class="control-btn" id="btn-music" onclick="toggleMusic()">
+                🎵 Bật / Tắt Nhạc
+            </button>
+            <button class="control-btn btn-share-highlight" onclick="saveAndGenerateQR()">
+                📱 Tạo Mã QR Chia Sẻ
+            </button>
+        </div>
+
+        <div class="progress-bar" id="state-progress"></div>
+    </div>
+
+    <!-- Customization Settings Panel -->
+    <div id="settings-panel">
+        <div class="panel-header">
+            <h3>CÀI ĐẶT CÁ NHÂN HOÁ</h3>
+            <button class="close-btn" onclick="toggleSettingsPanel()">✕</button>
+        </div>
+
+        <!-- Wish Text Customizer -->
+        <div class="section-title">✍️ Thông Tin & Lời Chúc</div>
+        <div class="custom-input-group">
+            <label for="input-wish-title">Tiêu đề thiệp (VD: Chúc Mừng Sinh Nhật Nam):</label>
+            <input type="text" id="input-wish-title" value="Chúc Mừng Sinh Nhật" onchange="updateWishPreview()">
+        </div>
+        <div class="custom-input-group">
+            <label for="input-wish-text">Lời chúc chi tiết:</label>
+            <textarea id="input-wish-text" onchange="updateWishPreview()">"Chúc bạn một tuổi mới luôn đong đầy hạnh phúc, rạng rỡ niềm vui, tâm hồn bao la như biển cả và thành công rực rỡ như những chòm sao sáng nhất!"</textarea>
+        </div>
+
+        <!-- Audio File Customizer -->
+        <div class="section-title">🎵 Tải Nhạc Sinh Nhật (MP3)</div>
+        <div class="music-upload-box">
+            <label for="audio-input">
+                <span>📁 Chọn File Nhạc MP3 Của Bạn</span>
+                <input type="file" id="audio-input" accept="audio/*" onchange="handleCustomAudioUpload(event)">
+            </label>
+            <div class="music-name" id="music-file-name">Mặc định: Giai Điệu Birthday Synth</div>
+        </div>
+
+        <!-- Photo Customizers -->
+        <div class="section-title">🖼️ Tải 5 Bức Ảnh Kỷ Niệm (Tự Crop Cân Đối)</div>
+        <div class="upload-slots" id="slots-container">
+            <!-- Upload Slots inserted dynamically -->
+        </div>
+
+        <button class="btn-action-full" onclick="saveAndGenerateQR()">
+            💾 Lưu & Tạo Mã QR Chia Sẻ
+        </button>
+    </div>
+
+    <!-- Modal Popup for QR Code & Link Sharing -->
+    <div class="modal-overlay" id="share-modal">
+        <div class="modal-card">
+            <h2>MÃ QR CHIA SẺ TRANG SINH NHẬT</h2>
+            <p style="font-size: 12px; color: #B0BEC5;">Quét mã QR dưới đây hoặc chép link gửi cho bạn bè để xem chính xác thiệp bạn vừa tạo!</p>
+            
+            <div class="qr-box">
+                <div id="qr-code-target"></div>
+            </div>
+
+            <div class="share-input-group">
+                <input type="text" id="share-url-input" readonly>
+                <button class="control-btn" onclick="copyShareLink()">📋 Chép Link</button>
+            </div>
+
+            <button class="btn-action-full" style="margin-top: 16px;" onclick="closeShareModal()">Đóng Cửa Sổ</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast">Thông báo hệ thống</div>
+
+    <!-- Firebase SDK Imports for Cloud Saving & Sharing -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration & Initialization
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'happy-birthday-3d-app';
+        let firebaseConfig = null;
+        if (typeof __firebase_config !== 'undefined') {
+            try { firebaseConfig = JSON.parse(__firebase_config); } catch(e) {}
+        }
+
+        let db = null;
+        let auth = null;
+
+        if (firebaseConfig) {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        }
+
+        async function ensureAuthenticated() {
+            if (!auth) return null;
+            if (auth.currentUser) return auth.currentUser;
+
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
+                    const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
+                    return userCredential.user;
+                } catch (e) {
+                    console.warn("Custom token failed, falling back to anonymous auth", e);
+                }
+            }
+            const userCred = await signInAnonymously(auth);
+            return userCred.user;
+        }
+
+        window.saveCardDataToCloud = async function(cardPayload) {
+            if (!db) {
+                throw new Error("Dịch vụ đám mây chưa sẵn sàng.");
+            }
+            await ensureAuthenticated();
+            const cardId = 'card_' + Math.random().toString(36).substr(2, 8) + Date.now().toString(36);
+            
+            // Mandatory Rule 1 Strict Path: /artifacts/{appId}/public/data/{collectionName}/{documentId}
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'birthday_cards', cardId);
+            await setDoc(docRef, cardPayload);
+            return cardId;
+        };
+
+        window.loadCardDataFromCloud = async function(cardId) {
+            if (!db) return null;
+            await ensureAuthenticated();
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'birthday_cards', cardId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                return docSnap.data();
+            }
+            return null;
+        };
+    </script>
+
+    <script>
+        // ==========================================
+        // 1. CẤU HÌNH & PHỐI MÀU MỆNH THỦY + ĐA SẮC RỰC RỠ
+        // ==========================================
+        const CONFIG = {
+            sapphireCount: 1600,   // Hạt xanh Sapphire / Cyan (Thủy)
+            goldCount: 1100,       // Hạt Vàng Ánh Kim / Hổ Phách (Thủy + Kim)
+            silverCount: 900,      // Hạt Trắng Bạch Kim Diamond (Kim sinh Thủy)
+            auroraCount: 800,      // Hạt Aurora Magenta / Violet lung linh
+            cakeRadius: 28,
+            explodeRadius: 65,  
+            photoOrbitRadius: 32,
+            autoRotateSpeed: 0.005,
+            durationCake: 7000,    
+            durationExplode: 6500, 
+            durationPhoto: 5000    
+        };
+
+        const PHOTO_WISHES = [
+            "💧 Tuổi mới êm đềm, trí tuệ và linh hoạt như dòng nước lành!",
+            "🌊 Chúc mọi ước mơ của bạn luôn dạt dào và vươn ra biển lớn!",
+            "✨ Bình an, tĩnh lặng và tỏa sáng rực rỡ như viên ngọc biển!",
+            "💛 Tài lộc hanh thông, niềm vui đong đầy và vạn sự như ý!",
+            "🎂 Happy Birthday! Một sinh nhật ngập tràn khoảnh khắc tuyệt vời!"
+        ];
+
+        let scene, camera, renderer;
+        let groupSapphire, groupGold, groupSilver, groupAurora, groupCandle; 
+        let photoMeshes = [];    
+        let titleMesh;
+        let ambientLight, pointLight1, pointLight2;
+        let isMusicPlaying = true;
+        let customAudioElement = null;
+        let customAudioBase64 = null; // Stored base64 string for audio sharing
+
+        let currentState = 'CAKE';
+        let autoPlay = true;
+        let pureViewMode = false;
+        let currentPhotoIndex = 0;
+        let stateTimer = 0;
+        let lastTime = Date.now();
+
+        const photoTextures = [];
+        const photoDataUrls = [null, null, null, null, null]; // Base64 cache for cloud save
+
+        // Smart Crop Image into Square Canvas without stretching/tearing
+        function processImageCrop(imgObj, callback) {
+            const canvas = document.createElement('canvas');
+            const targetSize = 384; // Optimized resolution for light storage
+            canvas.width = targetSize;
+            canvas.height = targetSize;
+            const ctx = canvas.getContext('2d');
+
+            // Cover Fit Calculation
+            const imgAspect = imgObj.width / imgObj.height;
+            let sw, sh, sx, sy;
+            if (imgAspect > 1) { // Landscape
+                sh = imgObj.height;
+                sw = imgObj.height;
+                sx = (imgObj.width - imgObj.height) / 2;
+                sy = 0;
+            } else { // Portrait / Square
+                sw = imgObj.width;
+                sh = imgObj.width;
+                sx = 0;
+                sy = (imgObj.height - imgObj.width) / 2;
+            }
+
+            // Fill dark ocean background
+            const grad = ctx.createLinearGradient(0, 0, targetSize, targetSize);
+            grad.addColorStop(0, '#041026');
+            grad.addColorStop(1, '#0C2040');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, targetSize, targetSize);
+
+            // Draw cropped centered image with margin and rounded corner effect
+            const margin = 18;
+            const innerSize = targetSize - margin * 2;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(margin, margin, innerSize, innerSize, 16);
+            ctx.clip();
+            ctx.drawImage(imgObj, sx, sy, sw, sh, margin, margin, innerSize, innerSize);
+            ctx.restore();
+
+            // Draw multi-color border frame
+            ctx.strokeStyle = '#00F3FF';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(margin, margin, innerSize, innerSize);
+
+            // Inner gold accent line
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(margin + 5, margin + 5, innerSize - 10, innerSize - 10);
+
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.78);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+
+            callback(texture, compressedDataUrl);
+        }
+
+        function createDefaultPhotoTexture(index) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 384; canvas.height = 384;
+            const ctx = canvas.getContext('2d');
+
+            const colorGradients = [
+                ['#00204A', '#0077B6', '#00F3FF'], 
+                ['#1A0033', '#6A00F4', '#FF5000'], 
+                ['#002B20', '#00875A', '#00FF88'], 
+                ['#2C001E', '#9D0208', '#FFB703'], 
+                ['#001845', '#0466C8', '#FF4081']  
+            ];
+            const g = colorGradients[index % colorGradients.length];
+            const grad = ctx.createLinearGradient(0, 0, 384, 384);
+            grad.addColorStop(0, g[0]);
+            grad.addColorStop(0.5, g[1]);
+            grad.addColorStop(1, g[2]);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 384, 384);
+
+            const borderColors = ['#FFD700', '#00F3FF', '#FF60C5', '#00FF88', '#FFB703'];
+            ctx.strokeStyle = borderColors[index % borderColors.length];
+            ctx.lineWidth = 10;
+            ctx.strokeRect(12, 12, 360, 360);
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            
+            const icons = ['💧', '🌊', '💎', '⭐', '🎂'];
+            ctx.font = '70px Arial';
+            ctx.fillText(icons[index], 192, 140);
+
+            ctx.font = 'bold 26px "Montserrat", sans-serif';
+            ctx.fillStyle = borderColors[index % borderColors.length];
+            ctx.fillText('HAPPY BIRTHDAY', 192, 220);
+            
+            ctx.font = '22px "Dancing Script", cursive';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(`Khoảnh Khắc Rực Rỡ #${index + 1}`, 192, 275);
+
+            photoDataUrls[index] = canvas.toDataURL('image/jpeg', 0.75);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // ==========================================
+        // 2. BỘ PHÁT ÂM NHẠC (Synth Mặc Định + Custom MP3)
+        // ==========================================
+        class BirthdayAudio {
+            constructor() {
+                this.ctx = null;
+                this.isPlaying = false;
+                this.timer = null;
+            }
+
+            init() {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+            }
+
+            playMelody() {
+                if (customAudioElement) {
+                    customAudioElement.play().catch(() => {});
+                    this.isPlaying = true;
+                    return;
+                }
+
+                if (!this.ctx) this.init();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                
+                this.isPlaying = true;
+                
+                const notes = [
+                    {f: 261.63, d: 0.4}, {f: 261.63, d: 0.4}, {f: 293.66, d: 0.8}, {f: 261.63, d: 0.8}, {f: 349.23, d: 0.8}, {f: 329.63, d: 1.2},
+                    {f: 261.63, d: 0.4}, {f: 261.63, d: 0.4}, {f: 293.66, d: 0.8}, {f: 261.63, d: 0.8}, {f: 392.00, d: 0.8}, {f: 349.23, d: 1.2},
+                    {f: 261.63, d: 0.4}, {f: 261.63, d: 0.4}, {f: 523.25, d: 0.8}, {f: 440.00, d: 0.8}, {f: 349.23, d: 0.8}, {f: 329.63, d: 0.8}, {f: 293.66, d: 0.8},
+                    {f: 466.16, d: 0.4}, {f: 466.16, d: 0.4}, {f: 440.00, d: 0.8}, {f: 349.23, d: 0.8}, {f: 392.00, d: 0.8}, {f: 349.23, d: 1.4}
+                ];
+
+                let noteIdx = 0;
+                const playNextNote = () => {
+                    if (!this.isPlaying || customAudioElement) return;
+                    const n = notes[noteIdx];
+                    
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(n.f, this.ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + n.d);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + n.d);
+
+                    noteIdx = (noteIdx + 1) % notes.length;
+                    this.timer = setTimeout(playNextNote, n.d * 880);
+                };
+
+                playNextNote();
+            }
+
+            stop() {
+                this.isPlaying = false;
+                if (this.timer) clearTimeout(this.timer);
+                if (customAudioElement) {
+                    customAudioElement.pause();
+                }
+            }
+        }
+
+        const audioPlayer = new BirthdayAudio();
+
+        function handleCustomAudioUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check file size (keep under ~750KB for safe Firestore document storage)
+            if (file.size > 800 * 1024) {
+                showToast("⚠️ Nhạc lớn hơn 800KB. Bạn nên dùng file MP3 nhỏ gọn để lưu nhanh!");
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customAudioBase64 = e.target.result;
+                if (customAudioElement) customAudioElement.pause();
+                
+                customAudioElement = new Audio(customAudioBase64);
+                customAudioElement.loop = true;
+
+                document.getElementById('music-file-name').innerText = `🎵 Đã tải: ${file.name}`;
+                showToast("🎵 Đã cài đặt nhạc thành công!");
+
+                if (isMusicPlaying) {
+                    audioPlayer.stop();
+                    audioPlayer.playMelody();
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ==========================================
+        // 3. TẠO HẠT PHÁO HOA & NẾN NHIỀU MÀU RỰC RỠ
+        // ==========================================
+        function createCustomTexture(type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const cx = 64, cy = 64;
+
+            if (type === 'sapphire') {
+                const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
+                grd.addColorStop(0, '#FFFFFF'); 
+                grd.addColorStop(0.3, '#00F3FF'); 
+                grd.addColorStop(0.7, '#0052D4');
+                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grd; ctx.fillRect(0,0,128,128);
+
+            } else if (type === 'gold') {
+                const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
+                grd.addColorStop(0, '#FFFFFF'); 
+                grd.addColorStop(0.3, '#FFD700'); 
+                grd.addColorStop(0.7, '#FF8C00');
+                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grd; ctx.fillRect(0,0,128,128);
+
+            } else if (type === 'silver') {
+                const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
+                grd.addColorStop(0, '#FFFFFF'); 
+                grd.addColorStop(0.4, '#E0F7FA'); 
+                grd.addColorStop(0.8, '#B0BEC5');
+                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grd; ctx.fillRect(0,0,128,128);
+
+            } else if (type === 'aurora') {
+                const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
+                grd.addColorStop(0, '#FFFFFF'); 
+                grd.addColorStop(0.3, '#FF4081'); 
+                grd.addColorStop(0.7, '#7C4DFF');
+                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grd; ctx.fillRect(0,0,128,128);
+
+            } else if (type === 'multi_flame') {
+                const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60);
+                grd.addColorStop(0, '#FFFFFF');
+                grd.addColorStop(0.25, '#FFD700');
+                grd.addColorStop(0.6, '#FF4081');
+                grd.addColorStop(0.85, '#00F3FF');
+                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grd; ctx.fillRect(0,0,128,128);
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const particleTextures = {
+            sapphire: createCustomTexture('sapphire'),
+            gold: createCustomTexture('gold'),
+            silver: createCustomTexture('silver'),
+            aurora: createCustomTexture('aurora'),
+            multiFlame: createCustomTexture('multi_flame')
+        };
+
+        // ==========================================
+        // 4. KHỞI TẠO KHÔNG GIAN 3D THREE.JS
+        // ==========================================
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x020617, 0.0018);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 95);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            container.appendChild(renderer.domElement);
+
+            ambientLight = new THREE.AmbientLight(0xd0f8ff, 0.8);
+            scene.add(ambientLight);
+
+            pointLight1 = new THREE.PointLight(0x00F3FF, 2.5, 140);
+            pointLight1.position.set(-30, 25, 30);
+            scene.add(pointLight1);
+
+            pointLight2 = new THREE.PointLight(0xFFD700, 2.2, 140);
+            pointLight2.position.set(30, -10, 30);
+            scene.add(pointLight2);
+
+            for(let i = 0; i < 5; i++) {
+                if (!photoTextures[i]) {
+                    photoTextures[i] = createDefaultPhotoTexture(i);
+                }
+            }
+
+            groupSapphire = createParticleSystem('sapphire', CONFIG.sapphireCount, 2.4);
+            groupGold = createParticleSystem('gold', CONFIG.goldCount, 2.5);
+            groupSilver = createParticleSystem('silver', CONFIG.silverCount, 2.3);
+            groupAurora = createParticleSystem('aurora', CONFIG.auroraCount, 2.6);
+
+            create3DPhotos();
+            createDecorations();
+
+            window.addEventListener('resize', onWindowResize);
+            requestAnimationFrame(animate);
+        }
+
+        function createParticleSystem(type, count, size) {
+            const positions = [];
+            const cakeTargets = [];
+            const explodeTargets = [];
+
+            for(let i = 0; i < count; i++) {
+                const tier = Math.random();
+                let radius, yMin, yMax;
+
+                if (tier < 0.5) { 
+                    radius = CONFIG.cakeRadius * (0.6 + Math.random() * 0.4);
+                    yMin = -15; yMax = -3;
+                } else if (tier < 0.85) { 
+                    radius = CONFIG.cakeRadius * 0.65 * (0.6 + Math.random() * 0.4);
+                    yMin = -3; yMax = 7;
+                } else { 
+                    radius = CONFIG.cakeRadius * 0.35 * (0.6 + Math.random() * 0.4);
+                    yMin = 7; yMax = 15;
+                }
+
+                const theta = Math.random() * Math.PI * 2;
+                const cx = radius * Math.cos(theta);
+                const cy = yMin + Math.random() * (yMax - yMin);
+                const cz = radius * Math.sin(theta);
+                
+                cakeTargets.push(cx, cy, cz);
+
+                const u = Math.random();
+                const v = Math.random();
+                const phi = Math.acos(2 * v - 1);
+                const lam = 2 * Math.PI * u;
+                const rad = CONFIG.explodeRadius * Math.cbrt(Math.random());
+
+                const ex = rad * Math.sin(phi) * Math.cos(lam);
+                const ey = rad * Math.sin(phi) * Math.sin(lam) + 4;
+                const ez = rad * Math.cos(phi);
+                
+                explodeTargets.push(ex, ey, ez);
+
+                positions.push(cx, cy, cz);
+            }
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geo.userData = { cake: cakeTargets, explode: explodeTargets };
+
+            const mat = new THREE.PointsMaterial({
+                size: size,
+                map: particleTextures[type],
+                transparent: true,
+                opacity: 0.92,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                sizeAttenuation: true
+            });
+
+            const points = new THREE.Points(geo, mat);
+            scene.add(points);
+            return points;
+        }
+
+        // ==========================================
+        // 5. KHUNG ẢNH & TRANG TRÍ 3D
+        // ==========================================
+        function create3DPhotos() {
+            const geo = new THREE.PlaneGeometry(12, 12);
+            const borderColors = [0x00F3FF, 0xFFD700, 0xFF4081, 0x00FF88, 0xFFB703];
+            
+            for(let i = 0; i < 5; i++) {
+                const borderGeo = new THREE.PlaneGeometry(13.2, 13.2);
+                const borderMat = new THREE.MeshBasicMaterial({ color: borderColors[i] });
+                const borderMesh = new THREE.Mesh(borderGeo, borderMat);
+                borderMesh.position.z = -0.05;
+
+                const mat = new THREE.MeshBasicMaterial({ 
+                    map: photoTextures[i], 
+                    side: THREE.DoubleSide 
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.add(borderMesh);
+
+                mesh.visible = false;
+                mesh.scale.set(0, 0, 0);
+                scene.add(mesh);
+                photoMeshes.push(mesh);
+            }
+        }
+
+        function createDecorations() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            const grad = ctx.createLinearGradient(0, 0, 1024, 0);
+            grad.addColorStop(0, '#00F3FF');
+            grad.addColorStop(0.5, '#FFD700');
+            grad.addColorStop(1, '#FF4081');
+
+            ctx.font = '900 82px "Montserrat", sans-serif';
+            ctx.fillStyle = grad; 
+            ctx.textAlign = 'center';
+            ctx.shadowColor = "#FFD700"; 
+            ctx.shadowBlur = 30; 
+            ctx.fillText("HAPPY BIRTHDAY", 512, 145);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending });
+            titleMesh = new THREE.Mesh(new THREE.PlaneGeometry(56, 14), mat);
+            titleMesh.position.set(0, 32, 0);
+            scene.add(titleMesh);
+
+            const candleGeo = new THREE.CylinderGeometry(0.85, 0.85, 6.5, 16);
+            const candleMat = new THREE.MeshStandardMaterial({ 
+                color: 0xFFD700, 
+                metalness: 0.8, 
+                roughness: 0.2 
+            });
+            const candle = new THREE.Mesh(candleGeo, candleMat);
+            candle.position.set(0, 18.5, 0);
+
+            const flameMat = new THREE.SpriteMaterial({ 
+                map: particleTextures.multiFlame, 
+                blending: THREE.AdditiveBlending 
+            });
+            const flameSprite = new THREE.Sprite(flameMat);
+            flameSprite.position.set(0, 4.8, 0);
+            flameSprite.scale.set(5.5, 7.5, 1);
+            candle.add(flameSprite);
+
+            groupCandle = candle;
+            scene.add(groupCandle);
+        }
+
+        function updateParticleGroup(group, targetState, speed) {
+            const positions = group.geometry.attributes.position.array;
+            const targetKey = (targetState === 'CAKE') ? 'cake' : 'explode';
+            const targets = group.geometry.userData[targetKey];
+
+            for(let i = 0; i < positions.length; i++) {
+                positions[i] += (targets[i] - positions[i]) * speed;
+            }
+            group.geometry.attributes.position.needsUpdate = true;
+            
+            if (targetState === 'CAKE') {
+                group.rotation.y += CONFIG.autoRotateSpeed;
+            } else {
+                group.rotation.y += CONFIG.autoRotateSpeed * 1.6;
+            }
+        }
+
+        // ==========================================
+        // 6. ANIMATION LOOP & CHUYỂN CẢNH
+        // ==========================================
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = Date.now();
+            const delta = now - lastTime;
+            lastTime = now;
+
+            const timeSec = now * 0.001;
+            const transitionSpeed = 0.05;
+
+            if (pointLight1 && pointLight2) {
+                pointLight1.color.setHSL((timeSec * 0.08) % 1, 0.9, 0.6);
+                pointLight2.color.setHSL((timeSec * 0.08 + 0.5) % 1, 0.9, 0.6);
+            }
+
+            if (autoPlay) {
+                stateTimer += delta;
+                
+                let currentMaxDuration = CONFIG.durationCake;
+                if (currentState === 'EXPLODE') currentMaxDuration = CONFIG.durationExplode;
+                if (currentState === 'PHOTO_SINGLE') currentMaxDuration = CONFIG.durationPhoto;
+
+                const progressPct = Math.min((stateTimer / currentMaxDuration) * 100, 100);
+                document.getElementById('state-progress').style.width = `${progressPct}%`;
+
+                if (stateTimer >= currentMaxDuration) {
+                    nextState();
+                }
+            }
+
+            updateParticleGroup(groupSapphire, currentState, transitionSpeed);
+            updateParticleGroup(groupGold, currentState, transitionSpeed);
+            updateParticleGroup(groupSilver, currentState, transitionSpeed);
+            updateParticleGroup(groupAurora, currentState, transitionSpeed);
+
+            if (currentState === 'CAKE') {
+                titleMesh.visible = true;
+                groupCandle.visible = true;
+                groupCandle.rotation.y += 0.012;
+                
+                const flameScale = 5.2 + Math.sin(timeSec * 14) * 0.9;
+                groupCandle.children[0].scale.set(flameScale, flameScale * 1.4, 1);
+
+                photoMeshes.forEach(m => {
+                    m.scale.lerp(new THREE.Vector3(0,0,0), 0.1);
+                    m.visible = false;
+                });
+
+                camera.position.x = Math.sin(timeSec * 0.25) * 12;
+                camera.position.y = 10 + Math.cos(timeSec * 0.2) * 4;
+                camera.lookAt(0, 5, 0);
+
+            } else if (currentState === 'EXPLODE') {
+                titleMesh.visible = false;
+                groupCandle.visible = false;
+
+                const baseAngle = groupSapphire.rotation.y;
+                const angleStep = (Math.PI * 2) / 5;
+
+                photoMeshes.forEach((mesh, i) => {
+                    mesh.visible = true;
+                    const angle = baseAngle + i * angleStep;
+                    const x = Math.sin(angle) * CONFIG.photoOrbitRadius;
+                    const z = Math.cos(angle) * CONFIG.photoOrbitRadius;
+                    const y = Math.sin(timeSec * 2 + i) * 4 + 2;
+
+                    mesh.position.lerp(new THREE.Vector3(x, y, z), 0.08);
+                    mesh.lookAt(camera.position);
+
+                    if (z > 5) {
+                        const scaleFactor = 1.0 + (z / CONFIG.photoOrbitRadius) * 0.65;
+                        mesh.scale.lerp(new THREE.Vector3(scaleFactor, scaleFactor, scaleFactor), 0.1);
+                    } else {
+                        mesh.scale.lerp(new THREE.Vector3(0.6, 0.6, 0.6), 0.1);
+                    }
+                });
+
+                camera.position.lerp(new THREE.Vector3(0, 10, 85), 0.05);
+                camera.lookAt(0, 0, 0);
+
+            } else if (currentState === 'PHOTO_SINGLE') {
+                titleMesh.visible = false;
+                groupCandle.visible = false;
+
+                photoMeshes.forEach((mesh, i) => {
+                    if (i === currentPhotoIndex) {
+                        mesh.visible = true;
+                        mesh.position.lerp(new THREE.Vector3(0, 2, 55), 0.08);
+                        mesh.scale.lerp(new THREE.Vector3(2.4, 2.4, 2.4), 0.08);
+                        mesh.lookAt(camera.position);
+                        mesh.rotation.z = 0;
+                    } else {
+                        mesh.scale.lerp(new THREE.Vector3(0, 0, 0), 0.1);
+                    }
+                });
+
+                camera.position.lerp(new THREE.Vector3(0, 2, 85), 0.05);
+                camera.lookAt(0, 2, 0);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ==========================================
+        // 7. SỰ KIỆN TẢI ẢNH, LƯU DỮ LIỆU & TẠO QR
+        // ==========================================
+        function nextState() {
+            stateTimer = 0;
+            const statusDiv = document.getElementById('status');
+            const wishDiv = document.getElementById('sub-wish');
+
+            if (currentState === 'CAKE') {
+                currentState = 'EXPLODE';
+                statusDiv.innerText = "🌊 BUNG TỎA NĂNG LƯỢNG MỆNH THỦY RỰC RỠ 🌊";
+                wishDiv.innerText = "Cùng ngắm nhìn những khoảnh khắc kỷ niệm rạng ngời!";
+            } 
+            else if (currentState === 'EXPLODE') {
+                currentState = 'PHOTO_SINGLE';
+                currentPhotoIndex = 0;
+                updatePhotoWish();
+            } 
+            else if (currentState === 'PHOTO_SINGLE') {
+                currentPhotoIndex++;
+                if (currentPhotoIndex < 5) {
+                    updatePhotoWish();
+                } else {
+                    currentState = 'CAKE';
+                    const mainTitle = document.getElementById('input-wish-title').value || "CHÚC MỪNG SINH NHẬT";
+                    statusDiv.innerText = `💎 ${mainTitle.toUpperCase()} 💎`;
+                    wishDiv.innerText = "Chúc bạn tuổi mới luôn êm đềm, may mắn và vươn xa như dòng biển lớn!";
+                }
+            }
+        }
+
+        function updatePhotoWish() {
+            const statusDiv = document.getElementById('status');
+            const wishDiv = document.getElementById('sub-wish');
+            
+            statusDiv.innerText = `📸 KỶ NIỆM BỨC ẢNH #${currentPhotoIndex + 1}`;
+            wishDiv.innerText = PHOTO_WISHES[currentPhotoIndex];
+        }
+
+        function updateWishPreview() {
+            const titleVal = document.getElementById('input-wish-title').value || "Chúc Mừng Sinh Nhật";
+            const wishVal = document.getElementById('input-wish-text').value || "";
+
+            document.getElementById('wish-title-display').innerText = titleVal;
+            document.getElementById('main-wish-text').innerText = wishVal;
+            document.getElementById('status').innerText = `💎 ${titleVal.toUpperCase()} 💎`;
+        }
+
+        function toggleAutoPlay() {
+            autoPlay = !autoPlay;
+            const btn = document.getElementById('btn-auto');
+            btn.innerText = autoPlay ? "⏸️ Tạm Dừng" : "▶️ Tiếp Tục";
+        }
+
+        function toggleMusic() {
+            isMusicPlaying = !isMusicPlaying;
+            if (isMusicPlaying) {
+                audioPlayer.playMelody();
+            } else {
+                audioPlayer.stop();
+            }
+            document.getElementById('btn-music').innerText = isMusicPlaying ? "🎵 Tắt Nhạc" : "🔇 Bật Nhạc";
+        }
+
+        function togglePureView() {
+            pureViewMode = !pureViewMode;
+            const uiLayer = document.getElementById('ui-layer');
+            const btnPure = document.getElementById('btn-pure-view');
+
+            if (pureViewMode) {
+                uiLayer.classList.add('hidden-ui');
+                btnPure.innerText = "👁️ Hiện UI";
+            } else {
+                uiLayer.classList.remove('hidden-ui');
+                btnPure.innerText = "👁️ Ẩn UI (Xem 3D)";
+            }
+        }
+
+        function startBirthdayShow() {
+            document.getElementById('start-overlay').style.display = 'none';
+            if (!scene) {
+                init3D();
+            }
+            audioPlayer.playMelody();
+            generateUploadSlots();
+        }
+
+        function generateUploadSlots() {
+            const container = document.getElementById('slots-container');
+            if (container.children.length > 0) return;
+
+            container.innerHTML = '';
+
+            for(let i = 0; i < 5; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'upload-slot';
+                slot.innerHTML = `
+                    <label for="file-input-${i}">
+                        <span>📷 Ảnh #${i + 1} (Tự Căn Khung)</span>
+                        <input type="file" id="file-input-${i}" accept="image/*" onchange="handleImageUpload(event, ${i})">
+                    </label>
+                    <img id="thumb-${i}" class="slot-thumb" src="${photoDataUrls[i] || ''}" alt="Thumb">
+                `;
+                container.appendChild(slot);
+            }
+        }
+
+        function handleImageUpload(event, index) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    processImageCrop(img, (texture, compressedBase64) => {
+                        photoTextures[index] = texture;
+                        photoDataUrls[index] = compressedBase64;
+
+                        if (photoMeshes[index]) {
+                            photoMeshes[index].material.map = texture;
+                            photoMeshes[index].material.needsUpdate = true;
+                        }
+
+                        document.getElementById(`thumb-${index}`).src = compressedBase64;
+                        showToast(`🖼️ Đã tải ảnh #${index + 1} (Đã căn chỉnh góc)!`);
+                    });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => { t.classList.remove('show'); }, 3000);
+        }
+
+        function toggleSettingsPanel() {
+            const panel = document.getElementById('settings-panel');
+            panel.classList.toggle('open');
+            generateUploadSlots();
+        }
+
+        // Cloud Storage & QR Code Generation
+        async function saveAndGenerateQR() {
+            showToast("⏳ Đang lưu dữ liệu & tạo mã QR...");
+
+            const wishTitle = document.getElementById('input-wish-title').value || "Chúc Mừng Sinh Nhật";
+            const wishText = document.getElementById('input-wish-text').value || "";
+
+            const cardPayload = {
+                wishTitle: wishTitle,
+                wishText: wishText,
+                photos: photoDataUrls,
+                audioData: customAudioBase64,
+                createdAt: new Date().toISOString()
+            };
+
+            let shareUrl = window.location.href;
+
+            if (window.saveCardDataToCloud) {
+                try {
+                    const cardId = await window.saveCardDataToCloud(cardPayload);
+                    const baseUrl = window.location.origin + window.location.pathname;
+                    shareUrl = `${baseUrl}?cardId=${cardId}`;
+                } catch(e) {
+                    console.warn("Could not save to cloud:", e);
+                }
+            }
+
+            // Display QR Code
+            const qrTarget = document.getElementById('qr-code-target');
+            qrTarget.innerHTML = '';
+            new QRCode(qrTarget, {
+                text: shareUrl,
+                width: 200,
+                height: 200,
+                colorDark : "#020916",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('share-url-input').value = shareUrl;
+            document.getElementById('share-modal').classList.add('active');
+        }
+
+        function closeShareModal() {
+            document.getElementById('share-modal').classList.remove('active');
+        }
+
+        function copyShareLink() {
+            const input = document.getElementById('share-url-input');
+            input.select();
+            input.setSelectionRange(0, 9999);
+            
+            try {
+                document.execCommand('copy');
+                showToast("📋 Đã sao chép đường dẫn chia sẻ!");
+            } catch(e) {
+                showToast("Vui lòng copy thủ công đường dẫn.");
+            }
+        }
+
+        // Load card from URL query param if present
+        async function checkAndLoadSavedCard() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cardId = urlParams.get('cardId');
+
+            if (cardId && window.loadCardDataFromCloud) {
+                showToast("⏳ Đang tải thiệp chúc mừng sinh nhật...");
+                try {
+                    const data = await window.loadCardDataFromCloud(cardId);
+                    if (data) {
+                        // Kích hoạt Chế độ chỉ xem cho người quét mã QR
+                        document.body.classList.add('read-only-mode');
+                        
+                        // Cập nhật Tiêu đề & Lời chúc cá nhân hoá
+                        if (data.wishTitle) {
+                            document.getElementById('input-wish-title').value = data.wishTitle;
+                            document.getElementById('wish-title-display').innerText = data.wishTitle;
+                            document.getElementById('status').innerText = `💎 ${data.wishTitle.toUpperCase()} 💎`;
+                        }
+                        if (data.wishText) {
+                            document.getElementById('input-wish-text').value = data.wishText;
+                            document.getElementById('main-wish-text').innerText = data.wishText;
+                        }
+
+                        // Cập nhật Bài hát tùy chỉnh
+                        if (data.audioData) {
+                            customAudioBase64 = data.audioData;
+                            customAudioElement = new Audio(customAudioBase64);
+                            customAudioElement.loop = true;
+                            document.getElementById('music-file-name').innerText = "🎵 Đã tải: Nhạc tùy chỉnh";
+                        }
+
+                        // Cập nhật 5 bức ảnh kỷ niệm
+                        if (data.photos && Array.isArray(data.photos)) {
+                            data.photos.forEach((base64, idx) => {
+                                if (base64) {
+                                    photoDataUrls[idx] = base64;
+                                    const img = new Image();
+                                    img.onload = function() {
+                                        processImageCrop(img, (texture) => {
+                                            photoTextures[idx] = texture;
+                                            if (photoMeshes[idx]) {
+                                                photoMeshes[idx].material.map = texture;
+                                                photoMeshes[idx].material.needsUpdate = true;
+                                            }
+                                        });
+                                    };
+                                    img.src = base64;
+                                }
+                            });
+                        }
+                        showToast("✨ Đã tải thành công thiệp mừng sinh nhật dành riêng cho bạn!");
+                    }
+                } catch(e) {
+                    console.error("Lỗi khi tải dữ liệu thiệp:", e);
+                }
+            }
+        }
+
+        function onWindowResize() {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+
+        window.onload = function() {
+            checkAndLoadSavedCard();
+        };
+    </script>
+</body>
+</html>
